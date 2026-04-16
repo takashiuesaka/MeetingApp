@@ -1,0 +1,229 @@
+name: Copilot Issue Orchestrator
+
+on:
+    issues:
+        types: [opened, reopened]
+    issue_comment:
+        types: [created]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    issues: write
+    pull-requests: write
+
+jobs:
+    bootstrap-on-issue:
+        if: github.event_name == 'issues'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Initialize labels, assign Copilot, and post kickoff comment
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const issueNumber = context.issue.number;
+                      const copilotMention = process.env.COPILOT_MENTION || '@copilot';
+
+                      const phaseLabels = [
+                        { name: 'phase:plan', color: '0052cc', description: 'Plan creation phase' },
+                        { name: 'phase:plan-verify', color: '5319e7', description: 'Plan verification phase' },
+                        { name: 'phase:implement', color: 'fbca04', description: 'Implementation phase' },
+                        { name: 'phase:test', color: '0e8a16', description: 'Testing phase' },
+                        { name: 'phase:review', color: 'd93f0b', description: 'Review phase' },
+                        { name: 'phase:done', color: '1d76db', description: 'Completed phase' }
+                      ];
+
+                      for (const label of phaseLabels) {
+                        try {
+                          await github.rest.issues.getLabel({ owner, repo, name: label.name });
+                        } catch (error) {
+                          if (error.status === 404) {
+                            await github.rest.issues.createLabel({
+                              owner,
+                              repo,
+                              name: label.name,
+                              color: label.color,
+                              description: label.description
+                            });
+                          } else {
+                            throw error;
+                          }
+                        }
+                      }
+
+                      const removeLabels = phaseLabels.map((l) => l.name);
+                      for (const labelName of removeLabels) {
+                        try {
+                          await github.rest.issues.removeLabel({ owner, repo, issue_number: issueNumber, name: labelName });
+                        } catch (error) {
+                          if (error.status !== 404) {
+                            throw error;
+                          }
+                        }
+                      }
+
+                      await github.rest.issues.addLabels({
+                        owner,
+                        repo,
+                        issue_number: issueNumber,
+                        labels: ['phase:plan']
+                      });
+
+                      const assignee = process.env.COPILOT_ASSIGNEE || 'copilot';
+                      try {
+                        await github.rest.issues.addAssignees({
+                          owner,
+                          repo,
+                          issue_number: issueNumber,
+                          assignees: [assignee]
+                        });
+                      } catch (error) {
+                        core.warning(`Could not assign ${assignee}: ${error.message}`);
+                      }
+
+                      const kickoff = [
+                        'Copilot orchestration started.',
+                        '',
+                        'Current phase: `phase:plan`',
+                        '',
+                        `${copilotMention} Please start **Plan Agent** now.`,
+                        '- Read: `AGENTS.md` and `agents/plan-agent/AGENTS.md`',
+                        '- Create PLAN markdown under `exec-plans/active/`',
+                        '- When done, post marker: `[PLAN_READY]`',
+                        '',
+                        'Phase transition markers (post in a comment when complete):',
+                        '- `[PLAN_READY]` -> `phase:plan-verify`',
+                        '- `[PLAN_VERIFIED]` -> `phase:implement`',
+                        '- `[IMPLEMENT_DONE]` -> `phase:test`',
+                        '- `[TEST_PASSED]` -> `phase:review`',
+                        '- `[REVIEW_PASSED]` -> `phase:done`',
+                        '- `[NEEDS_IMPLEMENT_FIX]` -> `phase:implement`',
+                        '- `[NEEDS_PLAN_FIX]` -> `phase:plan`'
+                      ].join('\n');
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: issueNumber,
+                        body: kickoff
+                      });
+
+    advance-phase-on-comment:
+        if: github.event_name == 'issue_comment' && github.event.issue.pull_request == null
+        runs-on: ubuntu-latest
+        steps:
+            - name: Advance phase from marker comment
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const issueNumber = context.issue.number;
+                      const actor = context.payload.comment.user?.login || '';
+                      const body = context.payload.comment.body || '';
+                      const copilotMention = process.env.COPILOT_MENTION || '@copilot';
+
+                      // Prevent workflow comments from recursively triggering phase changes.
+                      if (actor.endsWith('[bot]')) {
+                        core.info(`Comment by bot (${actor}) is ignored.`);
+                        return;
+                      }
+
+                      const transitions = [
+                        { marker: '[PLAN_READY]', to: 'phase:plan-verify' },
+                        { marker: '[PLAN_VERIFIED]', to: 'phase:implement' },
+                        { marker: '[IMPLEMENT_DONE]', to: 'phase:test' },
+                        { marker: '[TEST_PASSED]', to: 'phase:review' },
+                        { marker: '[REVIEW_PASSED]', to: 'phase:done' },
+                        { marker: '[NEEDS_IMPLEMENT_FIX]', to: 'phase:implement' },
+                        { marker: '[NEEDS_PLAN_FIX]', to: 'phase:plan' }
+                      ];
+
+                      const hit = transitions.find((t) => body.includes(t.marker));
+                      if (!hit) {
+                        core.info('No phase marker found. Skipping.');
+                        return;
+                      }
+
+                      const phaseLabels = ['phase:plan', 'phase:plan-verify', 'phase:implement', 'phase:test', 'phase:review', 'phase:done'];
+
+                      for (const labelName of phaseLabels) {
+                        try {
+                          await github.rest.issues.removeLabel({ owner, repo, issue_number: issueNumber, name: labelName });
+                        } catch (error) {
+                          if (error.status !== 404) {
+                            throw error;
+                          }
+                        }
+                      }
+
+                      await github.rest.issues.addLabels({
+                        owner,
+                        repo,
+                        issue_number: issueNumber,
+                        labels: [hit.to]
+                      });
+
+                      const assignee = process.env.COPILOT_ASSIGNEE || 'copilot';
+                      try {
+                        await github.rest.issues.addAssignees({
+                          owner,
+                          repo,
+                          issue_number: issueNumber,
+                          assignees: [assignee]
+                        });
+                      } catch (error) {
+                        core.warning(`Could not assign ${assignee}: ${error.message}`);
+                      }
+
+                      const phaseGuide = {
+                        'phase:plan': [
+                          `${copilotMention} Next action: rerun **Plan Agent**.`,
+                          '- Reference: `agents/plan-agent/AGENTS.md`',
+                          '- Update plan in `exec-plans/active/` and post `[PLAN_READY]` when ready.'
+                        ],
+                        'phase:plan-verify': [
+                          `${copilotMention} Next action: run **Plan Verify Agent**.`,
+                          '- Reference: `agents/plan-verify-agent/AGENTS.md`',
+                          '- Verify latest plan in `exec-plans/active/`.',
+                          '- If verification passes, post `[PLAN_VERIFIED]`.',
+                          '- If verification fails, post `[NEEDS_PLAN_FIX]` with concrete fixes.'
+                        ],
+                        'phase:implement': [
+                          `${copilotMention} Next action: run **Implement Agent**.`,
+                          '- Reference: `agents/implement-agent/AGENTS.md`',
+                          '- Implement by phase from `exec-plans/active/`.',
+                          '- When implementation for current phase is done, post `[IMPLEMENT_DONE]`.'
+                        ],
+                        'phase:test': [
+                          `${copilotMention} Next action: run **Test Agent**.`,
+                          '- Reference: `agents/test-agent/AGENTS.md`',
+                          '- Add/update tests and execute them.',
+                          '- Post `[TEST_PASSED]` on success or `[NEEDS_IMPLEMENT_FIX]` on failure.'
+                        ],
+                        'phase:review': [
+                          `${copilotMention} Next action: run **Review Agent**.`,
+                          '- Reference: `agents/review-agent/AGENTS.md`',
+                          '- Review code quality and spec compliance.',
+                          '- Post `[REVIEW_PASSED]` on success or `[NEEDS_IMPLEMENT_FIX]` when fixes are required.'
+                        ],
+                        'phase:done': [
+                          'Workflow completed for this issue.',
+                          '- Move corresponding plan from `exec-plans/active/` to `exec-plans/done/` if applicable.'
+                        ]
+                      };
+
+                      const guide = phaseGuide[hit.to] || ['Next action: continue based on `AGENTS.md`.'];
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: issueNumber,
+                        body: [
+                          `Phase updated: now in ${hit.to}.`,
+                          '',
+                          ...guide
+                        ].join('\n')
+                      });

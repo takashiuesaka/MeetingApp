@@ -1,0 +1,14 @@
+---
+applyTo: "src/**/Services/AudioCapture/**,src/**/Platforms/**"
+---
+
+## 音声キャプチャ実装方針（F1）
+
+- システムオーディオキャプチャは OS のオーディオ出力（loopback）をキャプチャし、MS Teams・Slack などの会議音声を取得すること。
+- Windows 側のシステム音声取得は WASAPI loopback を前提に実装すること。
+- macOS 側のシステム音声取得は仮想オーディオデバイスまたは ScreenCaptureKit 等の同等の方法を前提に実装すること。
+- マイク入力は PC のマイクデバイスからの音声を取得できるようにすること。
+- 音声ソースはユーザーが UI 上で選択できるようにすること。
+- 複数ソースの同時キャプチャに対応すること。
+- OS 固有実装はプラットフォームごとに分離し、`Platforms/Windows/` および `Platforms/MacCatalyst/` に配置すること。
+- 音声キャプチャサービスはインターフェースで抽象化し、OS 固有クラスを DI で注入すること。
