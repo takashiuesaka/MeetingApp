@@ -1,0 +1,79 @@
+name: Review Phase Assigner
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+    issues: write
+
+jobs:
+    assign-copilot-on-review:
+        if: github.event.issue.pull_request == null
+        runs-on: ubuntu-latest
+        steps:
+            - name: Transition to phase:review then assign Copilot
+              uses: actions/github-script@v7
+              env:
+                  COPILOT_ASSIGNEE: copilot
+              with:
+                  script: |
+                      const body = context.payload.comment?.body || '';
+                      if (!body.includes('[TEST_PASSED]')) {
+                        core.info('No [TEST_PASSED] marker found. Skipping.');
+                        return;
+                      }
+
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const issueNumber = context.issue.number;
+
+                      const phaseLabels = [
+                        'phase:plan',
+                        'phase:plan-verify',
+                        'phase:implement',
+                        'phase:test',
+                        'phase:review',
+                        'phase:done'
+                      ];
+
+                      for (const labelName of phaseLabels) {
+                        try {
+                          await github.rest.issues.removeLabel({
+                            owner,
+                            repo,
+                            issue_number: issueNumber,
+                            name: labelName
+                          });
+                        } catch (error) {
+                          if (error.status !== 404) {
+                            throw error;
+                          }
+                        }
+                      }
+
+                      await github.rest.issues.addLabels({
+                        owner,
+                        repo,
+                        issue_number: issueNumber,
+                        labels: ['phase:review']
+                      });
+
+                      await github.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: issueNumber,
+                        body: '@copilot Review Agentを起動してください。完了したら必ず[REVIEW_DONE]を Issue コメントに投稿してください。'
+                      });
+
+                      const assignee = process.env.COPILOT_ASSIGNEE || 'copilot';
+                      try {
+                        await github.rest.issues.addAssignees({
+                          owner,
+                          repo,
+                          issue_number: issueNumber,
+                          assignees: [assignee]
+                        });
+                      } catch (error) {
+                        core.warning(`Could not assign ${assignee}: ${error.message}`);
+                      }
