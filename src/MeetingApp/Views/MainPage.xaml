@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:MeetingApp.ViewModels"
+             x:Class="MeetingApp.Views.MainPage"
+             Title="MeetingApp"
+             x:DataType="vm:MainViewModel">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Toolbar -->
+            <RowDefinition Height="48" />
+            <!-- Body -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- ===== Toolbar ===== -->
+        <Border Grid.Row="0"
+                BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}"
+                StrokeThickness="0">
+            <Grid Padding="8,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Sidebar toggle -->
+                <Button Grid.Column="0"
+                        Text="☰"
+                        FontSize="18"
+                        Command="{Binding ToggleSidebarCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}"
+                        ToolTipProperties.Text="サイドバーの表示/非表示"
+                        WidthRequest="40"
+                        HeightRequest="40"
+                        Padding="0"
+                        CornerRadius="4" />
+
+                <!-- App title -->
+                <Label Grid.Column="1"
+                       Text="MeetingApp"
+                       FontSize="16"
+                       FontAttributes="Bold"
+                       VerticalOptions="Center"
+                       Margin="8,0,0,0" />
+
+                <!-- Split-view toggle -->
+                <Button Grid.Column="3"
+                        x:Name="SplitToggleButton"
+                        Text="⊟"
+                        FontSize="18"
+                        Command="{Binding ToggleSplitCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}"
+                        ToolTipProperties.Text="翻訳パネルの表示/非表示"
+                        WidthRequest="40"
+                        HeightRequest="40"
+                        Padding="0"
+                        CornerRadius="4" />
+            </Grid>
+        </Border>
+
+        <!-- ===== Body: Sidebar + Vertical Splitter + Main ===== -->
+        <Grid Grid.Row="1" x:Name="BodyGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="SidebarColumn" Width="250" />
+                <ColumnDefinition Width="4" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ===== Sidebar ===== -->
+            <Border Grid.Column="0"
+                    x:Name="SidebarPanel"
+                    IsVisible="{Binding IsSidebarVisible}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray800}}"
+                    StrokeThickness="0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
+                            StrokeThickness="0"
+                            Padding="12,10">
+                        <Label Text="セッション一覧"
+                               FontAttributes="Bold"
+                               FontSize="13"
+                               VerticalOptions="Center" />
+                    </Border>
+
+                    <ScrollView Grid.Row="1">
+                        <VerticalStackLayout Padding="8" Spacing="4">
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                                    StrokeThickness="0"
+                                    Padding="10,8"
+                                    StrokeShape="RoundRectangle 4">
+                                <Label Text="2026-04-16 会議"
+                                       TextColor="White"
+                                       FontSize="13" />
+                            </Border>
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray600}}"
+                                    StrokeThickness="0"
+                                    Padding="10,8"
+                                    StrokeShape="RoundRectangle 4">
+                                <Label Text="2026-04-15 スタンドアップ"
+                                       FontSize="13" />
+                            </Border>
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray600}}"
+                                    StrokeThickness="0"
+                                    Padding="10,8"
+                                    StrokeShape="RoundRectangle 4">
+                                <Label Text="2026-04-14 レビュー"
+                                       FontSize="13" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </ScrollView>
+                </Grid>
+            </Border>
+
+            <!-- ===== Vertical drag splitter (sidebar resizer) ===== -->
+            <BoxView Grid.Column="1"
+                     x:Name="VerticalSplitter"
+                     Color="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}">
+                <BoxView.GestureRecognizers>
+                    <PanGestureRecognizer PanUpdated="OnVerticalSplitterPanUpdated" />
+                </BoxView.GestureRecognizers>
+            </BoxView>
+
+            <!-- ===== Main content area ===== -->
+            <Grid Grid.Column="2" x:Name="MainContentGrid">
+                <Grid.RowDefinitions>
+                    <RowDefinition x:Name="TranscriptRow" Height="*" />
+                    <RowDefinition x:Name="HorizontalSplitterRow" Height="0" />
+                    <RowDefinition x:Name="TranslationRow" Height="0" />
+                </Grid.RowDefinitions>
+
+                <!-- Transcription panel -->
+                <Grid Grid.Row="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}"
+                            StrokeThickness="0"
+                            Padding="12,8">
+                        <Label Text="音声認識結果 (リアルタイム)"
+                               FontAttributes="Bold"
+                               FontSize="13" />
+                    </Border>
+
+                    <ScrollView Grid.Row="1" x:Name="TranscriptScrollView">
+                        <Label Text="{Binding TranscriptionText}"
+                               Padding="16"
+                               FontSize="14"
+                               LineBreakMode="WordWrap" />
+                    </ScrollView>
+                </Grid>
+
+                <!-- Horizontal drag splitter between transcript and translation -->
+                <BoxView Grid.Row="1"
+                         x:Name="HorizontalSplitter"
+                         IsVisible="False"
+                         Color="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}">
+                    <BoxView.GestureRecognizers>
+                        <PanGestureRecognizer PanUpdated="OnHorizontalSplitterPanUpdated" />
+                    </BoxView.GestureRecognizers>
+                </BoxView>
+
+                <!-- Translation panel -->
+                <Grid Grid.Row="2"
+                      x:Name="TranslationPanel"
+                      IsVisible="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}"
+                            StrokeThickness="0"
+                            Padding="12,8">
+                        <Label Text="翻訳結果 (日本語)"
+                               FontAttributes="Bold"
+                               FontSize="13" />
+                    </Border>
+
+                    <ScrollView Grid.Row="1" x:Name="TranslationScrollView">
+                        <Label Text="{Binding TranslationText}"
+                               Padding="16"
+                               FontSize="14"
+                               LineBreakMode="WordWrap" />
+                    </ScrollView>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</ContentPage>
