@@ -27,3 +27,10 @@ applyTo: "**"
 ## 仕様ドキュメント配置
 
 - ビジネス要件・仕様に関する Markdown は `product-specs/` 配下へ配置すること。
+
+## Issue 起点のビジネス要件更新ルール
+
+- Issue から新しいビジネス要件を作成する場合は、`product-specs/` 配下に新しい Markdown を作成すること。
+- 新しいビジネス要件 Markdown を作成した場合は、この `business-requirements.instructions.md` に要約（3〜5 行）を追記すること。
+- 要約には、作成した新規 Markdown へのリンクを必ず含めること。
+- 既存ビジネス要件の追加・変更で対応可能な場合は、新規作成ではなく既存 Markdown を更新すること。

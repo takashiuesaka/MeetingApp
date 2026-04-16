@@ -29,6 +29,13 @@
 - ファイル名は `YYYYMMDD-issue-<番号>-<短い要約>.md` を推奨する。
 - 1 Issue につき PLAN は 1 ファイルを原則とする。
 
+## Issue 仕様ドキュメント化
+
+- Issue に記載された要件は、実装前に仕様 Markdown として明文化すること。
+- ビジネス要件は `product-specs/` 配下の Markdown に記載すること。
+- 実装要件は `design-docs/` 配下の Markdown に記載すること。
+- ビジネス要件と実装要件は必ず別ファイルに分けること。
+
 ## Issue ラベル運用
 
 - `phase:plan`

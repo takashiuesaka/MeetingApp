@@ -90,6 +90,10 @@ jobs:
                         '',
                         `${copilotMention} Please start **Plan Agent** now.`,
                         '- Read: `AGENTS.md` and `agents/plan-agent/AGENTS.md`',
+                        '- Convert Issue requirements into two spec files before planning:',
+                        '  - `product-specs/...-business-requirements.md`',
+                        '  - `design-docs/...-implementation-requirements.md`',
+                        '- Keep business and implementation requirements in different markdown files.',
                         '- Create PLAN markdown under `exec-plans/active/`',
                         '- When done, post marker: `[PLAN_READY]`',
                         '',
@@ -182,11 +186,15 @@ jobs:
                         'phase:plan': [
                           `${copilotMention} Next action: rerun **Plan Agent**.`,
                           '- Reference: `agents/plan-agent/AGENTS.md`',
+                          '- Ensure Issue requirements are documented in separate files:',
+                          '  - `product-specs/...-business-requirements.md`',
+                          '  - `design-docs/...-implementation-requirements.md`',
                           '- Update plan in `exec-plans/active/` and post `[PLAN_READY]` when ready.'
                         ],
                         'phase:plan-verify': [
                           `${copilotMention} Next action: run **Plan Verify Agent**.`,
                           '- Reference: `agents/plan-verify-agent/AGENTS.md`',
+                          '- Verify that business and implementation requirements are split into different markdown files.',
                           '- Verify latest plan in `exec-plans/active/`.',
                           '- If verification passes, post `[PLAN_VERIFIED]`.',
                           '- If verification fails, post `[NEEDS_PLAN_FIX]` with concrete fixes.'
