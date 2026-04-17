@@ -3,7 +3,7 @@
 ## 背景
 
 会議中にユーザーが発話した内容をその場でテキスト化したいニーズがある。
-本 Issue では MacOS のマイクデバイスを音声ソースとして、Azure Speech Service を使用したリアルタイム Speech to Text（STT）機能を実現し、認識結果を画面に表示することを目的とする。
+本 Issue では macOS のマイクデバイスを音声ソースとして、Azure Speech Service を使用したリアルタイム Speech to Text（STT）機能を実現し、認識結果を画面に表示することを目的とする。
 
 ## 機能要件
 
