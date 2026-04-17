@@ -18,6 +18,7 @@ jobs:
               uses: actions/download-artifact@v4
               with:
                   name: issue-context
+                  path: issue-context
                   run-id: ${{ github.event.workflow_run.id }}
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -27,7 +28,18 @@ jobs:
               with:
                   script: |
                       const fs = require('fs');
-                      const raw = fs.readFileSync('issue-context/issue-context.json', 'utf8');
+                      const candidatePaths = [
+                        'issue-context/issue-context.json',
+                        'issue-context.json'
+                      ];
+
+                      const contextPath = candidatePaths.find(path => fs.existsSync(path));
+                      if (!contextPath) {
+                        core.setFailed(`issue context file not found. tried: ${candidatePaths.join(', ')}`);
+                        return;
+                      }
+
+                      const raw = fs.readFileSync(contextPath, 'utf8');
                       const parsed = JSON.parse(raw);
                       const artifactStatus = String(parsed.status || parsed.phase_label || '');
 
