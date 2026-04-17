@@ -24,7 +24,9 @@ applyTo: "src/**/Services/Transcription/**,src/**/Services/Diarization/**"
 ### Azure Speech SDK 使用方針
 
 - `Microsoft.CognitiveServices.Speech` NuGet パッケージを使用すること。
-- `SpeechConfig` の認証は `DefaultAzureCredential`（`InteractiveBrowserCredential` のみ有効）を使用して取得した AAD トークンを `SpeechConfig.FromAuthorizationToken` で設定すること。
+- `SpeechConfig` の認証は `DefaultAzureCredential`（`InteractiveBrowserCredential` のみ有効）から都度取得した Azure AD アクセストークンを `SpeechConfig.FromAuthorizationToken` で初期設定すること。
+- アクセストークンの取得・更新は常に `DefaultAzureCredential` に委譲し、アプリケーション側でアクセストークンやリフレッシュトークンを永続化しないこと。また、独自のトークンキャッシュを実装せず、Azure.Identity が提供する既定の動作のみを利用すること。
+- 連続認識がアクセストークン有効期限をまたぐ可能性があるため、認識開始前に最新トークンを取得し、認識中も失効前に `DefaultAzureCredential` から再取得したトークンで `SpeechConfig.AuthorizationToken` を更新することを実装仕様として明記すること。
 - 音声入力は `AudioConfig.FromDefaultMicrophoneInput()` を使用し、macOS デフォルトマイクデバイスから取得すること。
 - `SpeechRecognizer.StartContinuousRecognitionAsync()` を使用して連続認識を行うこと。
 - `Recognizing` イベントで暫定テキストを、`Recognized` イベントで確定テキストをそれぞれ発行すること。
