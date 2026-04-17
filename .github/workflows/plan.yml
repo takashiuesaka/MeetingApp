@@ -1,36 +1,114 @@
 name: Plan Phase Assigner
 
 on:
-    issues:
-        types: [labeled]
+    workflow_run:
+        workflows: [Issue Created]
+        types: [completed]
 
 permissions:
+    actions: read
     issues: write
 
 jobs:
     assign-copilot-on-plan:
-        if: github.event.label.name == 'phase:plan'
+        if: github.event.workflow_run.conclusion == 'success'
         runs-on: ubuntu-latest
         steps:
-            - name: Comment then assign Copilot to issue
+            - name: Download issue context from trigger run
+              uses: actions/download-artifact@v4
+              with:
+                  name: issue-context
+                  run-id: ${{ github.event.workflow_run.id }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Load issue context
+              id: load-context
               uses: actions/github-script@v7
-              env:
-                  COPILOT_BOT_LOGIN: copilot-swe-agent[bot]
-                  COPILOT_BASE_BRANCH: main
-                  COPILOT_CUSTOM_INSTRUCTIONS: Plan Agentを起動してください。Plan Agentが作業を完了したら必ず [PLAN_CREATED] を Issue コメントに投稿してください。
+              with:
+                  script: |
+                      const fs = require('fs');
+                      const raw = fs.readFileSync('issue-context/issue-context.json', 'utf8');
+                      const parsed = JSON.parse(raw);
+                      const artifactStatus = String(parsed.status || parsed.phase_label || '');
+
+                      core.setOutput('issue_number', String(parsed.issue_number || ''));
+                      core.setOutput('expected_phase', String(parsed.phase_label || 'phase:plan'));
+                      core.setOutput('source_status', String(parsed.workflow_status || 'unknown'));
+                      core.setOutput('artifact_status', artifactStatus);
+                      core.setOutput('status_is_plan', String(artifactStatus === 'phase:plan'));
+
+            - name: Stop when artifact status is not phase:plan
+              if: steps.load-context.outputs.status_is_plan != 'true'
+              run: |
+                  echo "Skip Plan assignment because artifact status is '${{ steps.load-context.outputs.artifact_status }}' (expected 'phase:plan')."
+
+            - name: Gate by issue phase/status
+              id: gate
+              if: steps.load-context.outputs.status_is_plan == 'true'
+              uses: actions/github-script@v7
               with:
                   script: |
                       const owner = context.repo.owner;
                       const repo = context.repo.repo;
-                      const issue_number = context.issue.number;
+                      const issueNumber = Number('${{ steps.load-context.outputs.issue_number }}');
+                      const expectedPhase = '${{ steps.load-context.outputs.expected_phase }}';
+                      const sourceStatus = '${{ steps.load-context.outputs.source_status }}';
+
+                      if (!Number.isInteger(issueNumber) || issueNumber <= 0) {
+                        core.setFailed(`Invalid issue number from artifact: ${issueNumber}`);
+                        return;
+                      }
+
+                      const { data: issue } = await github.rest.issues.get({
+                        owner,
+                        repo,
+                        issue_number: issueNumber
+                      });
+
+                      const labels = issue.labels.map(label => typeof label === 'string' ? label : label.name);
+                      const currentPhase = labels.find(label => label.startsWith('phase:')) || '';
+
+                      const isOpen = issue.state === 'open';
+                      const hasExpectedPhase = labels.includes(expectedPhase);
+                      const isSourceReady = sourceStatus === 'ready-for-plan';
+                      const proceed = isOpen && hasExpectedPhase && isSourceReady;
+
+                      core.info(`issue=${issueNumber}, open=${isOpen}, expectedPhase=${expectedPhase}, currentPhase=${currentPhase}, sourceStatus=${sourceStatus}, proceed=${proceed}`);
+
+                      core.setOutput('proceed', String(proceed));
+                      core.setOutput('issue_number', String(issueNumber));
+                      core.setOutput('current_phase', currentPhase);
+
+            - name: Comment then assign Copilot to issue
+              if: steps.gate.outputs.proceed == 'true'
+              uses: actions/github-script@v7
+              env:
+                  COPILOT_BOT_LOGIN: copilot-swe-agent[bot]
+                  COPILOT_BASE_BRANCH: main
+                  COPILOT_CUSTOM_AGENT: plan-agent
+                  COPILOT_CUSTOM_INSTRUCTIONS: Plan Agentを起動してください。Plan Agentが作業を完了したら必ず [PLAN_CREATED] を Issue コメントに投稿してください。
+                  TARGET_ISSUE_NUMBER: ${{ steps.gate.outputs.issue_number }}
+                  CURRENT_PHASE: ${{ steps.gate.outputs.current_phase }}
+              with:
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const issue_number = Number(process.env.TARGET_ISSUE_NUMBER);
                       const baseBranch = process.env.COPILOT_BASE_BRANCH || context.payload.repository.default_branch;
+                      const customAgent = process.env.COPILOT_CUSTOM_AGENT || '';
                       const customInstructions = process.env.COPILOT_CUSTOM_INSTRUCTIONS || '';
+                      const currentPhase = process.env.CURRENT_PHASE || '';
+
+                      if (!Number.isInteger(issue_number) || issue_number <= 0) {
+                        core.setFailed(`Invalid target issue number: ${process.env.TARGET_ISSUE_NUMBER}`);
+                        return;
+                      }
 
                       await github.rest.issues.createComment({
                         owner,
                         repo,
                         issue_number,
-                        body: '@copilot Plan Agentを起動してください。Plan Agentが作業を完了したら必ず [PLAN_CREATED] を Issue コメントに投稿してください。'
+                        body: `@copilot Plan Agentを起動してください。現在のフェーズは ${currentPhase || 'unknown'} です。Plan Agentが作業を完了したら必ず [PLAN_CREATED] を Issue コメントに投稿してください。`
                       });
 
                       try {
@@ -43,7 +121,7 @@ jobs:
                             target_repo: `${owner}/${repo}`,
                             base_branch: baseBranch,
                             custom_instructions: customInstructions,
-                            custom_agent: '',
+                            custom_agent: customAgent,
                             model: ''
                           },
                           headers: {
@@ -55,3 +133,8 @@ jobs:
                         const details = error.response?.data?.message || error.message;
                         core.setFailed(`Could not assign Copilot bot (${process.env.COPILOT_BOT_LOGIN}). status=${status}, details=${details}`);
                       }
+
+            - name: Skip message when phase/status mismatch
+              if: steps.gate.outputs.proceed != 'true'
+              run: |
+                  echo "Skip Plan assignment because issue phase/status gate did not pass."

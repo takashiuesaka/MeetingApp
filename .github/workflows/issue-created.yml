@@ -5,6 +5,7 @@ on:
         types: [opened, reopened]
 
 permissions:
+    actions: write
     issues: write
 
 jobs:
@@ -12,12 +13,39 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Add phase:plan label
+              id: add-label
               uses: actions/github-script@v7
               with:
                   script: |
+                      const phaseLabel = 'phase:plan';
+
                       await github.rest.issues.addLabels({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        issue_number: context.issue.number,
-                        labels: ['phase:plan']
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: context.issue.number,
+                          labels: [phaseLabel]
                       });
+
+                      core.setOutput('issue_number', String(context.issue.number));
+                      core.setOutput('issue_state', context.payload.issue?.state || 'unknown');
+                      core.setOutput('phase_label', phaseLabel);
+                      core.setOutput('workflow_status', 'ready-for-plan');
+                      core.setOutput('event_action', context.payload.action || 'unknown');
+
+            - name: Build issue context artifact
+              run: |
+                  cat > issue-context.json <<'JSON'
+                  {
+                      "issue_number": "${{ steps.add-label.outputs.issue_number }}",
+                      "issue_state": "${{ steps.add-label.outputs.issue_state }}",
+                      "phase_label": "${{ steps.add-label.outputs.phase_label }}",
+                      "workflow_status": "${{ steps.add-label.outputs.workflow_status }}",
+                      "event_action": "${{ steps.add-label.outputs.event_action }}"
+                  }
+                  JSON
+
+            - name: Upload issue context
+              uses: actions/upload-artifact@v4
+              with:
+                  name: issue-context
+                  path: issue-context.json
