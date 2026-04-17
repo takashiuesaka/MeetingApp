@@ -37,6 +37,7 @@ applyTo: "src/**/Services/Transcription/**,src/**/Services/Diarization/**"
   - `ICommand StartCommand` — 録音開始コマンド
   - `ICommand StopCommand` — 録音停止コマンド
   - `bool IsRecording` — 録音中フラグ（UI フィードバック用）
+- 本フェーズの F2-Mic では、認識結果は UI 表示用にメモリ上へ保持すること。F2 全体方針にある「保存」は将来の保存機能を含む要件として扱い、本フェーズでは永続化・ファイル保存・エクスポートは行わないこと。
 - UI 更新は `MainThread.BeginInvokeOnMainThread` を使用して必ずメインスレッドで行うこと。
 
 ### データモデル
