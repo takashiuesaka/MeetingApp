@@ -12,15 +12,15 @@
 
 上記の順序を必ず守ること。途中失敗時は所定のフェーズへ戻すこと。
 
-仕様と実装ルールの正本は `.github/instructions/` 配下とし、`AGENTS.md` 群への重複記載は最小限にすること。
+仕様と実装ルールの正本は `.github/instructions/` 配下とし、`agents/*.md` を含む補助ドキュメントへの重複記載は最小限にすること。
 
 ## フェーズ別担当
 
-- PLAN 作成: `agents/plan-agent/AGENTS.md`
-- PLAN 検証: `agents/plan-verify-agent/AGENTS.md`
-- 実装: `agents/implement-agent/AGENTS.md`
-- テスト: `agents/test-agent/AGENTS.md`
-- レビュー: `agents/review-agent/AGENTS.md`
+- PLAN 作成: `agents/plan-agent.md`
+- PLAN 検証: `agents/plan-verify-agent.md`
+- 実装: `agents/implement-agent.md`
+- テスト: `agents/test-agent.md`
+- レビュー: `agents/review-agent.md`
 
 ## exec-plans 運用
 
@@ -55,5 +55,5 @@
 
 ## テスト方針の強制
 
-テスト関連の作業は `agents/test-agent/AGENTS.md` を必ず参照し、その規約に従うこと。
+テスト関連の作業は `agents/test-agent.md` を必ず参照し、その規約に従うこと。
 `test.prompt.md` は使用しない。

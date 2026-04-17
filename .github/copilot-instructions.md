@@ -27,8 +27,8 @@
 
 | ファイル | 役割 |
 | --- | --- |
-| `agents/plan-agent/AGENTS.md` | PLAN 作成エージェント |
-| `agents/plan-verify-agent/AGENTS.md` | PLAN 検証エージェント |
-| `agents/implement-agent/AGENTS.md` | 実装エージェント |
-| `agents/test-agent/AGENTS.md` | テストエージェント。実装完了後のユニットテスト・統合テスト生成と実行を担当する。 |
-| `agents/review-agent/AGENTS.md` | コードレビューエージェント |
+| `agents/plan-agent.md` | `plan-agent`。Issue と既存仕様を読み、実装可能な PLAN を作成する。 |
+| `agents/plan-verify-agent.md` | `plan-verify-agent`。PLAN 作成 Agent が作成した PLAN を独立した観点で検証する。 |
+| `agents/implement-agent.md` | `implement-agent`。承認済み PLAN に従って段階的に実装する。 |
+| `agents/test-agent.md` | `test-agent`。PLAN と実装差分を基に、ユニットテスト・統合テストの実装と実行を担当する。 |
+| `agents/review-agent.md` | `review-agent`。実装結果が仕様・コード規約・保守性を満たすかを検証する。 |

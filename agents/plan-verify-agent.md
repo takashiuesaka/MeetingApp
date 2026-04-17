@@ -1,8 +1,7 @@
-# Plan Verify Agent
-
-## 役割
-
-PLAN 作成 Agent が作成した PLAN を独立した観点で検証する。
+---
+name: plan-verify-agent
+description: PLAN 作成 Agent が作成した PLAN を独立した観点で検証する。
+---
 
 ## 入力
 

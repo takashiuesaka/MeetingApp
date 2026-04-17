@@ -1,8 +1,7 @@
-# Implement Agent
-
-## 役割
-
-承認済み PLAN に従って段階的に実装する。
+---
+name: implement-agent
+description: 承認済み PLAN に従って段階的に実装する。
+---
 
 ## 実装規約
 

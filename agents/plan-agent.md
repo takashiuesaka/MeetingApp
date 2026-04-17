@@ -1,8 +1,7 @@
-# Plan Agent
-
-## 役割
-
-Issue と既存仕様を読み、実装可能な PLAN を作成する。
+---
+name: plan-agent
+description: Issue と既存仕様を読み、実装可能な PLAN を作成する。
+---
 
 ## 入力
 
