@@ -41,4 +41,4 @@ applyTo: "**"
 
 対象プラットフォームを Windows + macOS から macOS のみに変更。
 ビルドターゲットは `net10.0-maccatalyst` のみとし、Windows 向け配布・パッケージングは廃止する。
-→ 詳細: [product-specs/20260417-platform-change-business-requirements.md](../../product-specs/20260417-platform-change-business-requirements.md)
+→ 詳細: [product-specs/20260417-platform-change-business-requirements.md](../../../product-specs/20260417-platform-change-business-requirements.md)
