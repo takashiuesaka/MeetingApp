@@ -36,8 +36,8 @@ public partial class MainPage : ContentPage
             }
             else
             {
-                SidebarColumn.Width = GridLength.Zero;
-                BodyGrid.ColumnDefinitions[1].Width = GridLength.Zero;
+                SidebarColumn.Width = new GridLength(0);
+                BodyGrid.ColumnDefinitions[1].Width = new GridLength(0);
             }
         }
     }
@@ -63,8 +63,8 @@ public partial class MainPage : ContentPage
         else
         {
             TranscriptRow.Height = GridLength.Star;
-            HorizontalSplitterRow.Height = GridLength.Zero;
-            TranslationRow.Height = GridLength.Zero;
+            HorizontalSplitterRow.Height = new GridLength(0);
+            TranslationRow.Height = new GridLength(0);
 
             HorizontalSplitter.IsVisible = false;
             TranslationPanel.IsVisible = false;
