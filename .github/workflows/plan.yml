@@ -4,6 +4,27 @@ on:
     workflow_run:
         workflows: [Issue Created]
         types: [completed]
+    workflow_dispatch:
+        inputs:
+            issue_number:
+                description: Target issue number
+                required: true
+                type: string
+            status:
+                description: Phase/status for this run (must be phase:plan to proceed)
+                required: true
+                default: phase:plan
+                type: string
+            expected_phase:
+                description: Expected phase label on issue
+                required: true
+                default: phase:plan
+                type: string
+            source_status:
+                description: Source workflow status marker
+                required: true
+                default: ready-for-plan
+                type: string
 
 permissions:
     actions: read
@@ -11,10 +32,11 @@ permissions:
 
 jobs:
     assign-copilot-on-plan:
-        if: github.event.workflow_run.conclusion == 'success'
+        if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
         runs-on: ubuntu-latest
         steps:
             - name: Download issue context from trigger run
+              if: github.event_name == 'workflow_run'
               uses: actions/download-artifact@v4
               with:
                   name: issue-context
@@ -27,6 +49,24 @@ jobs:
               uses: actions/github-script@v7
               with:
                   script: |
+                      const eventName = context.eventName;
+
+                      if (eventName === 'workflow_dispatch') {
+                        const inputs = context.payload.inputs || {};
+                        const issueNumber = String(inputs.issue_number || '');
+                        const artifactStatus = String(inputs.status || inputs.phase_label || '');
+                        const expectedPhase = String(inputs.expected_phase || artifactStatus || 'phase:plan');
+                        const sourceStatus = String(inputs.source_status || 'ready-for-plan');
+
+                        core.setOutput('issue_number', issueNumber);
+                        core.setOutput('expected_phase', expectedPhase);
+                        core.setOutput('source_status', sourceStatus);
+                        core.setOutput('artifact_status', artifactStatus);
+                        core.setOutput('status_is_plan', String(artifactStatus === 'phase:plan'));
+                        core.info(`Loaded manual context: issue=${issueNumber}, status=${artifactStatus}, expected_phase=${expectedPhase}, source_status=${sourceStatus}`);
+                        return;
+                      }
+
                       const fs = require('fs');
                       const candidatePaths = [
                         'issue-context/issue-context.json',
