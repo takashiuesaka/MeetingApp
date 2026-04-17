@@ -42,12 +42,13 @@ jobs:
                   name: issue-context
                   path: issue-context
                   run-id: ${{ github.event.workflow_run.id }}
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  github-token: ${{ secrets.COPILOT_AGENT_PAT }}
 
             - name: Load issue context
               id: load-context
               uses: actions/github-script@v7
               with:
+                  github-token: ${{ secrets.COPILOT_AGENT_PAT }}
                   script: |
                       const eventName = context.eventName;
 
@@ -99,6 +100,7 @@ jobs:
               if: steps.load-context.outputs.status_is_plan == 'true'
               uses: actions/github-script@v7
               with:
+                  github-token: ${{ secrets.COPILOT_AGENT_PAT }}
                   script: |
                       const owner = context.repo.owner;
                       const repo = context.repo.repo;
@@ -142,6 +144,7 @@ jobs:
                   TARGET_ISSUE_NUMBER: ${{ steps.gate.outputs.issue_number }}
                   CURRENT_PHASE: ${{ steps.gate.outputs.current_phase }}
               with:
+                  github-token: ${{ secrets.COPILOT_AGENT_PAT }}
                   script: |
                       const owner = context.repo.owner;
                       const repo = context.repo.repo;

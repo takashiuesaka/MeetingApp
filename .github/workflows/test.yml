@@ -17,6 +17,7 @@ jobs:
               env:
                   COPILOT_ASSIGNEE: copilot
               with:
+                  github-token: ${{ secrets.COPILOT_AGENT_PAT }}
                   script: |
                       const body = context.payload.comment?.body || '';
                       if (!body.includes('[IMPLEMENT_DONE]')) {
