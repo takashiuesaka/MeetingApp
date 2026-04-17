@@ -4,8 +4,8 @@ applyTo: "**"
 
 ## プロダクト方針
 
-- このアプリは .NET MAUI を使ったクロスプラットフォームデスクトップアプリケーションとして実装すること。
-- 対象プラットフォームは Windows と macOS の両方とすること。
+- このアプリは .NET MAUI を使った macOS デスクトップアプリケーションとして実装すること。
+- 対象プラットフォームは macOS のみとすること。
 - .NET は .NET 10 を前提とすること。
 - 配布は framework-dependent とし、.NET Runtime をアプリに同梱しないこと。
 - 公開コマンドでは --self-contained false を前提にすること。
@@ -34,3 +34,11 @@ applyTo: "**"
 - 新しいビジネス要件 Markdown を作成した場合は、この `business-requirements.instructions.md` に要約（3〜5 行）を追記すること。
 - 要約には、作成した新規 Markdown へのリンクを必ず含めること。
 - 既存ビジネス要件の追加・変更で対応可能な場合は、新規作成ではなく既存 Markdown を更新すること。
+
+## 追加ビジネス要件
+
+### 実行環境変更（macOS のみ）
+
+対象プラットフォームを Windows + macOS から macOS のみに変更。
+ビルドターゲットは `net10.0-maccatalyst` のみとし、Windows 向け配布・パッケージングは廃止する。
+→ 詳細: [product-specs/20260417-platform-change-business-requirements.md](../../../product-specs/20260417-platform-change-business-requirements.md)
