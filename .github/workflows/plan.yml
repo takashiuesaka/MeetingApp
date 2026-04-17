@@ -15,24 +15,43 @@ jobs:
             - name: Comment then assign Copilot to issue
               uses: actions/github-script@v7
               env:
-                  COPILOT_ASSIGNEE: copilot
+                  COPILOT_BOT_LOGIN: copilot-swe-agent[bot]
+                  COPILOT_BASE_BRANCH: main
+                  COPILOT_CUSTOM_INSTRUCTIONS: Plan Agentを起動してください。Plan Agentが作業を完了したら必ず [PLAN_CREATED] を Issue コメントに投稿してください。
               with:
                   script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const issue_number = context.issue.number;
+                      const baseBranch = process.env.COPILOT_BASE_BRANCH || context.payload.repository.default_branch;
+                      const customInstructions = process.env.COPILOT_CUSTOM_INSTRUCTIONS || '';
+
                       await github.rest.issues.createComment({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        issue_number: context.issue.number,
+                        owner,
+                        repo,
+                        issue_number,
                         body: '@copilot Plan Agentを起動してください。Plan Agentが作業を完了したら必ず [PLAN_CREATED] を Issue コメントに投稿してください。'
                       });
 
-                      const assignee = process.env.COPILOT_ASSIGNEE || 'copilot';
                       try {
-                        await github.rest.issues.addAssignees({
-                          owner: context.repo.owner,
-                          repo: context.repo.repo,
-                          issue_number: context.issue.number,
-                          assignees: [assignee]
+                        await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/assignees', {
+                          owner,
+                          repo,
+                          issue_number,
+                          assignees: [process.env.COPILOT_BOT_LOGIN],
+                          agent_assignment: {
+                            target_repo: `${owner}/${repo}`,
+                            base_branch: baseBranch,
+                            custom_instructions: customInstructions,
+                            custom_agent: '',
+                            model: ''
+                          },
+                          headers: {
+                            'X-GitHub-Api-Version': '2022-11-28'
+                          }
                         });
                       } catch (error) {
-                        core.warning(`Could not assign ${assignee}: ${error.message}`);
+                        const status = error.status || 'unknown';
+                        const details = error.response?.data?.message || error.message;
+                        core.setFailed(`Could not assign Copilot bot (${process.env.COPILOT_BOT_LOGIN}). status=${status}, details=${details}`);
                       }
