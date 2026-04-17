@@ -11,13 +11,13 @@
 | `src/MeetingApp/MeetingApp.csproj` | 修正：Windows TFM および Windows 固有プロパティを削除 |
 | `.github/instructions/product-specs/business-requirements.instructions.md` | 修正：対象プラットフォームを macOS のみに変更 |
 | `.github/instructions/design-docs/audio-capture.instructions.md` | 修正：Windows/WASAPI に関する記述を削除 |
-| `product-specs/20260417-platform-change-business-requirements.md` | 新規作成：ビジネス要件 |
+| `.github/instructions/product-specs/20260417-platform-change-business-requirements.md` | 新規作成：ビジネス要件（※ルート直下に誤配置されたため `.github/instructions/product-specs/` へ移動済み） |
 
 ## 実装フェーズ
 
 ### Phase 1: ドキュメント整備
 
-- [x] `product-specs/20260417-platform-change-business-requirements.md` 作成
+- [x] `.github/instructions/product-specs/20260417-platform-change-business-requirements.md` 作成
 - [x] `business-requirements.instructions.md` 更新
 - [x] `audio-capture.instructions.md` 更新
 

@@ -13,11 +13,11 @@ applyTo: "src/**"
 
 ## ドキュメント配置規約
 
-- 設計ドキュメントは `design-docs/` 配下に格納すること。
+- 設計ドキュメントは `.github/instructions/design-docs/` 配下に格納すること。
 - 全体アーキテクチャ、ソフトウェアアーキテクチャなど、異なる設計レイヤーは別々の Markdown ファイルに分割すること。
-- ビジネス要件・仕様ドキュメントは `product-specs/` 配下に格納すること。
-- 自動生成されたドキュメント（例: DB スキーマ情報）は `generated/` 配下に格納すること。
-- 実装時の計画 Markdown および実行済み計画 Markdown は `exec-plans/` 配下に格納すること。
+- ビジネス要件・仕様ドキュメントは `.github/instructions/product-specs/` 配下に格納すること。
+- 自動生成されたドキュメント（例: DB スキーマ情報）は `.github/instructions/generated/` 配下に格納すること。
+- 実装時の計画 Markdown および実行済み計画 Markdown は `.github/instructions/exec-plans/` 配下に格納すること。
 
 ## Issue 起点の実装仕様更新ルール
 
