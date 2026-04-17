@@ -10,6 +10,55 @@ applyTo: "src/**/Services/Transcription/**,src/**/Services/Diarization/**"
 - 対応言語は英語を主対象とし、多言語対応を視野に入れた設計にすること。
 - 書き起こし結果はタイムスタンプ付きで保存すること。
 
+## マイク入力リアルタイムSTT 実装仕様（F2-Mic）
+
+### サービスインターフェース
+
+- `IMicrophoneTranscriptionService` インターフェースを `src/MeetingApp/Services/Transcription/` に定義すること。
+- 以下のメンバーを持つこと:
+  - `StartAsync(CancellationToken)` — 連続音声認識を開始する非同期メソッド
+  - `StopAsync()` — 連続音声認識を停止する非同期メソッド
+  - `event EventHandler<TranscriptionPartialResult> Recognizing` — 暫定結果イベント
+  - `event EventHandler<TranscriptionFinalResult> Recognized` — 確定結果イベント
+
+### Azure Speech SDK 使用方針
+
+- `Microsoft.CognitiveServices.Speech` NuGet パッケージを使用すること。
+- `SpeechConfig` の認証は `DefaultAzureCredential`（`InteractiveBrowserCredential` のみ有効）から都度取得した Azure AD アクセストークンを `SpeechConfig.FromAuthorizationToken` で初期設定すること。
+- アクセストークンの取得・更新は常に `DefaultAzureCredential` に委譲し、アプリケーション側でアクセストークンやリフレッシュトークンを永続化しないこと。また、独自のトークンキャッシュを実装せず、Azure.Identity が提供する既定の動作のみを利用すること。
+- 連続認識がアクセストークン有効期限をまたぐ可能性があるため、認識開始前に最新トークンを取得し、認識中も失効前に `DefaultAzureCredential` から再取得したトークンで `SpeechConfig.AuthorizationToken` を更新することを実装仕様として明記すること。
+- 音声入力は `AudioConfig.FromDefaultMicrophoneInput()` を使用し、macOS デフォルトマイクデバイスから取得すること。
+- `SpeechRecognizer.StartContinuousRecognitionAsync()` を使用して連続認識を行うこと。
+- `Recognizing` イベントで暫定テキストを、`Recognized` イベントで確定テキストをそれぞれ発行すること。
+
+### ViewModel / UI 実装方針
+
+- `MainViewModel` に以下のプロパティ・コマンドを追加すること:
+  - `string PartialTranscript` — 認識中の暫定テキスト（バインディング用）
+  - `ObservableCollection<TranscriptionEntry> TranscriptEntries` — 確定済みテキストの一覧
+  - `ICommand StartCommand` — 録音開始コマンド
+  - `ICommand StopCommand` — 録音停止コマンド
+  - `bool IsRecording` — 録音中フラグ（UI フィードバック用）
+- 本フェーズの F2-Mic では、認識結果は UI 表示用にメモリ上へ保持すること。F2 全体方針にある「保存」は将来の保存機能を含む要件として扱い、本フェーズでは永続化・ファイル保存・エクスポートは行わないこと。
+- UI 更新は `MainThread.BeginInvokeOnMainThread` を使用して必ずメインスレッドで行うこと。
+
+### データモデル
+
+- `TranscriptionPartialResult` — `string Text` を持つ暫定結果モデル
+- `TranscriptionFinalResult` — `string Text`、`DateTimeOffset Timestamp` を持つ確定結果モデル
+- `TranscriptionEntry` — UI バインディング用の確定済みエントリ（`string Text`、`DateTimeOffset Timestamp`）
+
+### UI 表示仕様
+
+- 暫定テキストは専用ラベルにイタリック等で区別表示すること。
+- 確定テキストはスクロール可能な `CollectionView` または `ScrollView + StackLayout` で一覧表示すること。
+- 最新エントリが常に表示されるよう自動スクロールすること。
+- 録音中は開始ボタンを無効化し、録音中インジケーター（例: 赤丸アイコンまたはラベル）を表示すること。
+
+### macOS パーミッション
+
+- `Platforms/MacCatalyst/Info.plist` に `NSMicrophoneUsageDescription` キーを追加し、マイクアクセス理由を記述すること。
+
 ## 話者識別実装方針（F5）
 
 - 音声ストリーム内の話者を識別し、匿名ラベル（Speaker A, Speaker B, …）を割り当てること。

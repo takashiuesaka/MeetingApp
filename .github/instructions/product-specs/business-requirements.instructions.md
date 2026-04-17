@@ -42,3 +42,9 @@ applyTo: "**"
 対象プラットフォームを Windows + macOS から macOS のみに変更。
 ビルドターゲットは `net10.0-maccatalyst` のみとし、Windows 向け配布・パッケージングは廃止する。
 → 詳細: [20260417-platform-change-business-requirements.md](./20260417-platform-change-business-requirements.md)
+
+### マイク入力リアルタイム音声認識（STT）
+
+macOS のマイクデバイスを音声ソースとして Azure Speech Service を使用し、リアルタイムに音声認識した結果を画面に表示する機能を追加する。
+録音の開始・停止はUIボタンで制御し、暫定結果・確定結果を区別して表示する。認証は DefaultAzureCredential を使用し、InteractiveBrowserCredential のみを有効にして Azure CLI / Visual Studio など他の認証手段へフォールバックしないこと。
+→ 詳細: [20260417-issue-microphone-stt-business-requirements.md](./20260417-issue-microphone-stt-business-requirements.md)
